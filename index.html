@@ -2,10 +2,15 @@
 <html>
 
   <head>
-    <title>Backbone Demo: Todos in CoffeeScript</title>
-    <link href="todos.css" media="all" rel="stylesheet" type="text/css"/>
+    <title>Backbone Demo: Todos in CoffeeScript</title><!-- 
+    <link href="css/normalize.css" media="all" rel="stylesheet" type="text/css"/> -->
+    <link href="css/foundation.min.css" media="all" rel="stylesheet" type="text/css"/>
+    <link href="css/todos.css" media="all" rel="stylesheet" type="text/css"/>
+
     <script src="lib/json2.js"></script>
+    <script src="lib/modernizr.js"></script>
     <script src="lib/jquery-1.5.js"></script>
+    <script src="lib/foundation.min.js"></script>
     <script src="lib/underscore-1.1.6.js"></script>
     <script src="lib/backbone.js"></script>
     <script src="lib/backbone-localstorage.js"></script>
@@ -16,69 +21,52 @@
 
     <!-- Todo App Interface -->
 
-    <div id="todoapp">
-
-      <div class="title">
-        <h1>Todos</h1>
-        <h3>in CoffeeScript</h3>
+    <div id="app-wrapper">
+      <div class="row">
+        <div class="title small-12 medium-6 columns">
+          <h1>to-do-loo</h1>
+        </div>
       </div>
 
-      <div class="content">
+      <div class="content row">
+        <form>
+        <div class='small-12 medium-6 columns'>
 
-        <div id="create-todo">
-          <input id="new-todo" placeholder="What needs to be done?" type="text" />
+          <input id="input-todo" placeholder="What do you have to-do-loo?" type="text" />
           <span class="ui-tooltip-top" style="display:none;">Press Enter to save this task</span>
         </div>
-
+        </form>
         <div id="todos">
-          <ul id="todo-list"></ul>
+          <ul id="todo-list" class='small-12 columns' ></ul>
         </div>
 
-        <div id="todo-stats"></div>
+        <div id="todo-stats" class='small-12 columns' ></div>
 
       </div>
 
-    </div>
-
-    <h3>Instructions:</h3>
-    <ul id="instructions">
-      <li>Double-click to edit a todo.</li>
-      <li><a href="docs/coffeescript/todos.html">View the annotated CoffeeScript source.</a></li>
-      <li><a href="http://github.com/JasonGiedymin/backbone-todojs-coffeescript">View the GitHub repository.</a></li>
-      <li><a href="js-ver/index.html">Play with the original app.</a></li>
-      <li><a href="docs/js/todos.html">View the original annotated source</a></li>
-    </ul>
-
-    <div id="credits">
-      CoffeeScript version done by
-      <br />
-      <a href="http://jasongiedymin.com/">Jason Giedymin</a>
-      <br />
-      <a href="http://github.com/JasonGiedymin/">GitHub</a>
-      <br />
-      <a href="twitter.com/jasongiedymin">Twitter</a>
-    </div>
-
-    <div id="credits">
-      Originally Created by
-      <br />
-      <a href="http://jgn.me/">J&eacute;r&ocirc;me Gravel-Niquet</a>
     </div>
 
     <!-- Templates -->
 
+
+
     <script type="text/template" id="item-template">
       <div class="todo <%= done ? 'done' : '' %>">
+
         <div class="display">
           <input class="check" type="checkbox" <%= done ? 'checked="checked"' : '' %> />
           <div class="todo-content"></div>
           <span class="todo-destroy"></span>
         </div>
+
         <div class="edit">
           <input class="todo-input" type="text" value="" />
         </div>
       </div>
     </script>
+
+
+
 
     <script type="text/template" id="stats-template">
       <% if (total) { %>
@@ -95,7 +83,7 @@
           </a>
         </span>
       <% } %>
-    </script>
+    </script> 
 
   <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -109,7 +97,6 @@
   })();
   </script>
 
-  <a href="http://github.com/JasonGiedymin/backbone-todojs-coffeescript"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://gs1.wac.edgecastcdn.net/80460E/assets/img/abad93f42020b733148435e2cd92ce15c542d320/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub"></a>
 
   </body>
 </html>

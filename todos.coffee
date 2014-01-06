@@ -1,225 +1,214 @@
-# An example Backbone application contributed by
-# [Jérôme Gravel-Niquet](http://jgn.me/). This demo uses a simple
-# [LocalStorage adapter](backbone-localstorage.html)
-# to persist Backbone models within your browser.
-# 
-# This [CoffeeScript](http://jashkenas.github.com/coffee-script/) variation has been provided by [Jason Giedymin](http://jasongiedymin.com/).
-#
-# Note: two things you will notice with my CoffeeScript are that I prefer to
-# use four space indents and prefer to use `()` for all functions.
 
-# Load the application once the DOM is ready, using a `jQuery.ready` shortcut.
 $ ->    
-    ### Todo Model ###
+  ### TodoItem Model ###
 
-    # Our basic **Todo** model has `content`, `order`, and `done` attributes.
-    class Todo extends Backbone.Model
-        # Default attributes for the todo.
-        defaults:
-            content: "empty todo..."
-            done: false
+  # Our basic **TodoItem** model has `content`, `order`, and `done` attributes.
+  class TodoItem extends Backbone.Model
+    # Default attributes for the todo.
+    defaults:
+      content: "empty todo..."
+      done: false
 
-        # Ensure that each todo created has `content`.
-        initialize: ->
-            if !@get("content")
-                @set({ "content": @defaults.content })
+    # Ensure that each todo created has `content`.
+    initialize: ->
+      if !@get("content")
+          @set({ "content": @defaults.content })
 
-        # Toggle the `done` state of this todo item.
-        toggle: ->
-            @save({ done: !@get("done") })
+    # Toggle the `done` state of this todo item.
+    toggle: ->
+      @save({ done: !@get("done") })
 
-        # Remove this Todo from *localStorage* and delete its view.
-        clear: ->
-            @destroy()
-            @view.remove()
+    # Remove this TodoItem from *localStorage* and delete its view.
+    clear: ->
+      @destroy()
+      @view.remove()
 
-    ### Todo Collection ###
+  ### Todo Collection ###
+  
+  class TodoList extends Backbone.Collection
 
-    # The collection of todos is backed by *localStorage* instead of a remote
-    # server.
-    class TodoList extends Backbone.Collection
+    # Reference to this collection's model.
+    model: TodoItem
 
-        # Reference to this collection's model.
-        model: Todo
+    # Save all of the todo items under the `"todos"` namespace.
+    localStorage: new Store("todos")
 
-        # Save all of the todo items under the `"todos"` namespace.
-        localStorage: new Store("todos")
+    # Attribute getter/setter
+    getDone = (todo) ->
+      return todo.get("done")
 
-        # Attribute getter/setter
-        getDone = (todo) ->
-            return todo.get("done")
+    # Filter down the list of all todo items that are finished.
+    done: ->
+      return @filter( getDone )
 
-        # Filter down the list of all todo items that are finished.
-        done: ->
-            return @filter( getDone )
+    # Filter down the list to only todo items that are still not finished.
+    remaining: ->
+      return @without.apply( this, @done() )
 
-        # Filter down the list to only todo items that are still not finished.
-        remaining: ->
-            return @without.apply( this, @done() )
+    # We keep the OurTodos in sequential order, despite being saved by unordered
+    # GUID in the database. This generates the next order number for new items.
+    nextOrder: ->
+      return 1 if !@length
+      return @last().get('order') + 1
 
-        # We keep the Todos in sequential order, despite being saved by unordered
-        # GUID in the database. This generates the next order number for new items.
-        nextOrder: ->
-            return 1 if !@length
-            return @last().get('order') + 1
+    # OurTodos are sorted by their original insertion order.
+    comparator: (todo) ->
+      return todo.get("order")
 
-        # Todos are sorted by their original insertion order.
-        comparator: (todo) ->
-            return todo.get("order")
 
-    ### Todo Item View ###
 
-    # The DOM element for a todo item...
-    class TodoView extends Backbone.View
+  ### Todo Item View ###
 
-        #... is a list tag.
-        tagName:  "li"
+  # The DOM element for a todo item...
+  class TodoView extends Backbone.View
 
-        # Cache the template function for a single item.
-        template: _.template( $("#item-template").html() )
+    #... is a list tag.
+    tagName:  "li"
 
-        # The DOM events specific to an item.
-        events:
-            "click .check"              : "toggleDone",
-            "dblclick div.todo-content" : "edit",
-            "click span.todo-destroy"   : "clear",
-            "keypress .todo-input"      : "updateOnEnter"
+    # Cache the template function for a single item.
+    template: _.template( $("#item-template").html() )
 
-        # The TodoView listens for changes to its model, re-rendering. Since there's
-        # a one-to-one correspondence between a **Todo** and a **TodoView** in this
-        # app, we set a direct reference on the model for convenience.
-        initialize: ->
-            @model.bind('change', this.render);
-            @model.view = this;
+    # The DOM events specific to an item.
+    events:
+      "click .check"              : "toggleDone",
+      "dblclick div.todo-content" : "edit",
+      "click span.todo-destroy"   : "clear",
+      "keypress .todo-input"      : "updateOnEnter"
 
-        # Re-render the contents of the todo item.
-        render: =>
-            this.$(@el).html( @template(@model.toJSON()) )
-            @setContent()
-            return this
+    # The TodoView listens for changes to its model, re-rendering. Since there's
+    # a one-to-one correspondence between a **Todo** and a **TodoView** in this
+    # app, we set a direct reference on the model for convenience.
+    initialize: ->
+      @model.bind('change', this.render);
+      @model.view = this;
 
-        # To avoid XSS (not that it would be harmful in this particular app),
-        # we use `jQuery.text` to set the contents of the todo item.
-        setContent: ->
-            content = @model.get("content")
-            this.$(".todo-content").text(content)
-            @input = this.$(".todo-input");
-            @input.bind("blur", @close);
-            @input.val(content);
+    # Re-render the contents of the todo item.
+    render: =>
+      this.$(@el).html( @template(@model.toJSON()) )
+      @setContent()
+      return this
 
-        # Toggle the `"done"` state of the model.
-        toggleDone: ->
-            @model.toggle()
+    # To avoid XSS (not that it would be harmful in this particular app),
+    # we use `jQuery.text` to set the contents of the todo item.
+    setContent: ->
+      content = @model.get("content")
+      this.$(".todo-content").text(content)
+      @input = this.$(".todo-input");
+      @input.bind("blur", @close);
+      @input.val(content);
 
-        # Switch this view into `"editing"` mode, displaying the input field.
-        edit: =>
-            this.$(@el).addClass("editing")
-            @input.focus()
+    # Toggle the `"done"` state of the model.
+    toggleDone: ->
+      @model.toggle()
 
-        # Close the `"editing"` mode, saving changes to the todo.
-        close: =>
-            @model.save({ content: @input.val() })
-            $(@el).removeClass("editing")
+    # Switch this view into `"editing"` mode, displaying the input field.
+    edit: =>
+      this.$(@el).addClass("editing")
+      @input.focus()
 
-        # If you hit `enter`, we're through editing the item.
-        updateOnEnter: (e) =>
-            @close() if e.keyCode is 13
+    # Close the `"editing"` mode, saving changes to the todo.
+    close: =>
+      @model.save({ content: @input.val() })
+      $(@el).removeClass("editing")
 
-        # Remove this view from the DOM.
-        remove: ->
-            $(@el).remove()
+    # If you hit `enter`, we're through editing the item.
+    updateOnEnter: (e) =>
+      @close() if e.keyCode is 13
 
-        # Remove the item, destroy the model.
-        clear: () ->
-            @model.clear()
+    # Remove this view from the DOM.
+    remove: ->
+      $(@el).remove()
 
-    ### The Application ###
+    # Remove the item, destroy the model.
+    clear: () ->
+      @model.clear()
 
-    # Our overall **AppView** is the top-level piece of UI.
-    class AppView extends Backbone.View
-        # Instead of generating a new element, bind to the existing skeleton of
-        # the App already present in the HTML.
-        el_tag = "#todoapp"
-        el: $(el_tag)
+  ### The Application ###
 
-        # Our template for the line of statistics at the bottom of the app.
-        statsTemplate: _.template( $("#stats-template").html() )
+  # Our overall **TodolooAppView** is the top-level piece of UI.
+  class TodolooAppView extends Backbone.View
+    # Instead of generating a new element, bind to the existing skeleton of
+    # the App already present in the HTML.
+    el_tag = "#app-wrapper"
+    el: $(el_tag)
 
-        # Delegated events for creating new items, and clearing completed ones.
-        events:
-            "keypress #new-todo"  : "createOnEnter",
-            "keyup #new-todo"     : "showTooltip",
-            "click .todo-clear a" : "clearCompleted"
+    # Our template for the line of statistics at the bottom of the app.
+    statsTemplate: _.template( $("#stats-template").html() )
 
-        # At initialization we bind to the relevant events on the `Todos`
-        # collection, when items are added or changed. Kick things off by
-        # loading any preexisting todos that might be saved in *localStorage*.
-        initialize: =>
-            @input = this.$("#new-todo")
+    # Delegated events for creating new items, and clearing completed ones.
+    events:
+      "keypress #input-todo"  : "createOnEnter",
+      "keyup #input-todo"     : "showTooltip",
+      "click .todo-clear a" : "clearCompleted"
 
-            Todos.bind("add", @addOne)
-            Todos.bind("reset", @addAll)
-            Todos.bind("all", @render)
+    # At initialization we bind to the relevant events on the `OurTodos`
+    # collection, when items are added or changed. Kick things off by
+    # loading any preexisting todos that might be saved in *localStorage*.
+    initialize: =>
+      @input = this.$("#input-todo")
 
-            Todos.fetch()
+      OurTodos.bind("add", @addOne)
+      OurTodos.bind("reset", @addAll)
+      OurTodos.bind("all", @render)
 
-        # Re-rendering the App just means refreshing the statistics -- the rest
-        # of the app doesn't change.
-        render: =>
-            this.$('#todo-stats').html( @statsTemplate({
-                total:      Todos.length,
-                done:       Todos.done().length,
-                remaining:  Todos.remaining().length
-            }))
+      OurTodos.fetch()
 
-        # Add a single todo item to the list by creating a view for it, and
-        # appending its element to the `<ul>`.
-        addOne: (todo) =>
-            view = new TodoView( {model: todo} )
-            this.$("#todo-list").append( view.render().el )
+    # Re-rendering the App just means refreshing the statistics -- the rest
+    # of the app doesn't change.
+    render: =>
+      this.$('#todo-stats').html( @statsTemplate({
+        total:      OurTodos.length,
+        done:       OurTodos.done().length,
+        remaining:  OurTodos.remaining().length
+      }))
 
-        # Add all items in the **Todos** collection at once.
-        addAll: =>
-            Todos.each(@addOne);
+    # Add a single todo item to the list by creating a view for it, and
+    # appending its element to the `<ul>`.
+    addOne: (todo) =>
+      view = new TodoView( {model: todo} )
+      this.$("#todo-list").append( view.render().el )
 
-        # Generate the attributes for a new Todo item.
-        newAttributes: ->
-            return {
-                content: @input.val(),
-                order:   Todos.nextOrder(),
-                done:    false
-            }
+    # Add all items in the **OurTodos** collection at once.
+    addAll: =>
+      OurTodos.each(@addOne);
 
-        # If you hit return in the main input field, create new **Todo** model,
-        # persisting it to *localStorage*.
-        createOnEnter: (e) ->
-            return if (e.keyCode != 13)
-            Todos.create( @newAttributes() )
-            @input.val('')
+    # Generate the attributes for a new TodoItem item.
+    newAttributes: ->
+      return {
+        content: @input.val(),
+        order:   OurTodos.nextOrder(),
+        done:    false
+      }
 
-        # Clear all done todo items, destroying their models.
-        clearCompleted: ->
-            _.each(Todos.done(), (todo) ->
-                todo.clear()
-            )
-            return false
+    # If you hit return in the main input field, create new **TodoItem** model,
+    # persisting it to *localStorage*.
+    createOnEnter: (e) ->
+      return if (e.keyCode != 13)
+      OurTodos.create( @newAttributes() )
+      @input.val('')
 
-        # Lazily show the tooltip that tells you to press `enter` to save
-        # a new todo item, after one second.
-        showTooltip: (e) ->
-            tooltip = this.$(".ui-tooltip-top")
-            val = @input.val()
-            tooltip.fadeOut()
-            clearTimeout(@tooltipTimeout) if (@tooltipTimeout)
-            return if (val is '' || val is @input.attr("placeholder"))
-            
-            show = () ->
-                tooltip.show().fadeIn()
-            @tooltipTimeout = _.delay(show, 1000)
+    # Clear all done todo items, destroying their models.
+    clearCompleted: ->
+      _.each(OurTodos.done(), (todo) ->
+        todo.clear()
+      )
+      return false
 
-    # Create our global collection of **Todos**.
-    # Note: I've actually chosen not to export globally to `window`.
-    # Original documentation has been left intact.
-    Todos = new TodoList
-    App = new AppView()
+    # Lazily show the tooltip that tells you to press `enter` to save
+    # a new todo item, after one second.
+    showTooltip: (e) ->
+      tooltip = this.$(".ui-tooltip-top")
+      val = @input.val()
+      tooltip.fadeOut()
+      clearTimeout(@tooltipTimeout) if (@tooltipTimeout)
+      return if (val is '' || val is @input.attr("placeholder"))
+      
+      show = () ->
+        tooltip.show().fadeIn()
+      @tooltipTimeout = _.delay(show, 1000)
 
+  # Create our global collection of **OurTodos**.
+  # Note: I've actually chosen not to export globally to `window`.
+  # Original documentation has been left intact.
+  OurTodos = new TodoList
+  App = new TodolooAppView()
